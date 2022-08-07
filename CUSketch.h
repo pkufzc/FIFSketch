@@ -54,6 +54,7 @@ public:
         return res;
         
     }
+
     
 private:
     count_type **counters;

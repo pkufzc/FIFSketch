@@ -74,6 +74,10 @@ public:
             return towerCU->Query(item);
         }
     }
+    
+    void get_distribution(vector<double> &dist){}
+    double get_entropy(){return 0.0;}
+    int get_cardinality(){return 0;}
 
 private:
     double HEAVY_RATIO = 0.2;

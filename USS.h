@@ -26,7 +26,7 @@ public:
 	}
 
 	count_type Query(const data_type item) { return summary->Query(item); }
-	
+
 private:
 	StreamSummary *summary;
 };

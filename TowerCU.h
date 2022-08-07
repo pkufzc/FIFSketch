@@ -6,6 +6,7 @@
 
 using namespace std;
 
+// 2bit+4bit
 class TowerCU{
 public:
     TowerCU(double _MEMORY){
@@ -138,8 +139,6 @@ public:
                
             }
         }
-
-        if(minv == 15) minv = 255;
        
         return minv;
     }

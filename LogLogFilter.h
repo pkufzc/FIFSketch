@@ -38,7 +38,7 @@ public:
 		}			
 		return (uint32_t)ret;
 	}
-	
+    
 private:
 	const double CU_RATIO = 0.75;
 	const double LF_RATIO = 0.25;

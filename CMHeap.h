@@ -32,6 +32,7 @@ public:
         return sketch->Query(key);
     }
 
+
 private:
     const double SKETCH_RATIO = 0.25;
     const double HEAP_RATIO = 0.75;

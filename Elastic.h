@@ -17,6 +17,7 @@ public:
         counters = new uint8_t[LIGHT_LENGTH];
         memset(counters, 0, sizeof(uint8_t) * LIGHT_LENGTH);
         memset(buckets, 0, sizeof(Bucket) * HEAVY_LENGTH);
+        
     }
 
     ~Elastic(){
