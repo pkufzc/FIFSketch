@@ -4,7 +4,7 @@
 
 using namespace std;
 
-const string folder = "./datasets/";
+const string folder = "../datasets/";
 const string filenames[] = {"130000.dat"};
 
 int main() {
