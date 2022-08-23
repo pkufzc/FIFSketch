@@ -36,7 +36,6 @@ public:
 		HashMap actual_order, predicted_order, actual_topk, predicted_topk, all_order;
 		count_type hit = 0, cnt1 = 0, cnt2 = 0;
 		double aae = 0, are = 0, arre = 0, f1 = 0;
-		count_type evictSuccess = 0, evictFail = 0, evicted = 0;
 		
 		for (HashMap::iterator it = mp.begin(); it != mp.end(); ++it) {
 			actual[++cnt1].x = it->first;

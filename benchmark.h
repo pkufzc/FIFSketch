@@ -20,6 +20,8 @@
 #include "ASketch.h"
 #include "Salsa.h"
 #include "LogLogFilter.h"
+#include "FCMSketch.h"
+#include "FCMSketchTopK.h"
 
 typedef std::chrono::high_resolution_clock::time_point TP;
 
@@ -27,7 +29,7 @@ inline TP now() { return std::chrono::high_resolution_clock::now(); }
 
 data_type *read_data(const char *PATH, const count_type length,
                      count_type *cnt) {
-	data_type *items = new TUPLES[length];
+	data_type *items = new data_type[length];
 	data_type *it = items;
 
 	TIMESTAMP *timestamps = new TIMESTAMP[length];
@@ -35,7 +37,7 @@ data_type *read_data(const char *PATH, const count_type length,
 
 	FILE *data = fopen(PATH, "rb");
 	*cnt = 0;
-	while (fread(it++, sizeof(TUPLES), 1, data) > 0 && fread(timestamp++, sizeof(TIMESTAMP), 1, data) > 0) {
+	while (fread(it++, sizeof(data_type), 1, data) > 0 && fread(timestamp++, sizeof(TIMESTAMP), 1, data) > 0) {
 		(*cnt)++;
 	}
 
@@ -52,7 +54,7 @@ void BenchTopKFlowSize(const char *PATH, uint32_t K) {
 	constexpr int32_t mem_base = 0;
 	constexpr int32_t mem_inc = 200000;
 	constexpr int32_t mem_var = 5;
-	constexpr int32_t cmp_num = 10;
+	constexpr int32_t cmp_num = 11;
 	constexpr int32_t COUNTER_PER_BUCKET = 8;
 
 	Abstract *sketches[mem_var][cmp_num];
@@ -68,6 +70,7 @@ void BenchTopKFlowSize(const char *PATH, uint32_t K) {
 		sketches[i][7] = new ASketch((i + 1) * mem_inc);
 		sketches[i][8] = new SalsaCM((i + 1) * mem_inc);
 		sketches[i][9] = new LogLogFilter((i + 1) * mem_inc);
+		sketches[i][10] = new FCMSketchTopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 	
 	}
 
@@ -112,7 +115,7 @@ void BenchAllFlowSize(const char *PATH) {
 	constexpr int32_t mem_base = 0;
 	constexpr int32_t mem_inc = 200000;
 	constexpr int32_t mem_var = 5;
-	constexpr int32_t cmp_num = 10;
+	constexpr int32_t cmp_num = 11;
 	constexpr int32_t COUNTER_PER_BUCKET = 8;
 
 	Abstract *sketches[mem_var][cmp_num];
@@ -128,6 +131,7 @@ void BenchAllFlowSize(const char *PATH) {
 		sketches[i][7] = new ASketch((i + 1) * mem_inc);
 		sketches[i][8] = new SalsaCM((i + 1) * mem_inc);
 		sketches[i][9] = new LogLogFilter((i + 1) * mem_inc);
+		sketches[i][10] = new FCMSketch((i + 1) * mem_inc);
 	
 	}
 
@@ -172,7 +176,7 @@ void BenchHH(const char *PATH) {
 	constexpr int32_t mem_base = 0;
 	constexpr int32_t mem_inc = 200000;
 	constexpr int32_t mem_var = 5;
-	constexpr int32_t cmp_num = 10;
+	constexpr int32_t cmp_num = 11;
 	constexpr int32_t COUNTER_PER_BUCKET = 8;
 
 	Abstract *sketches[mem_var][cmp_num];
@@ -188,6 +192,7 @@ void BenchHH(const char *PATH) {
 		sketches[i][7] = new ASketch((i + 1) * mem_inc);
 		sketches[i][8] = new SalsaCM((i + 1) * mem_inc);
 		sketches[i][9] = new LogLogFilter((i + 1) * mem_inc);
+		sketches[i][10] = new FCMSketchTopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 	
 	}
 
@@ -278,7 +283,7 @@ void BenchHC(const char *PATH) {
 	constexpr int32_t mem_base = 0;
 	constexpr int32_t mem_inc = 200000;
 	constexpr int32_t mem_var = 5;
-	constexpr int32_t cmp_num = 10;
+	constexpr int32_t cmp_num = 11;
 	constexpr int32_t COUNTER_PER_BUCKET = 8;
 
 	Abstract *sketches1[mem_var][cmp_num];
@@ -295,6 +300,7 @@ void BenchHC(const char *PATH) {
 		sketches1[i][7] = new ASketch((i + 1) * mem_inc);
 		sketches1[i][8] = new SalsaCM((i + 1) * mem_inc);
 		sketches1[i][9] = new LogLogFilter((i + 1) * mem_inc);
+		sketches1[i][10] = new FCMSketchTopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 
 		sketches2[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 		sketches2[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
@@ -306,6 +312,7 @@ void BenchHC(const char *PATH) {
 		sketches2[i][7] = new ASketch((i + 1) * mem_inc);
 		sketches2[i][8] = new SalsaCM((i + 1) * mem_inc);
 		sketches2[i][9] = new LogLogFilter((i + 1) * mem_inc);
+		sketches2[i][10] = new FCMSketchTopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 	
 	}
 
@@ -382,7 +389,7 @@ void BenchThp(const char *PATH) {
 	constexpr int32_t mem_base = 0;
 	constexpr int32_t mem_inc = 200000;
 	constexpr int32_t mem_var = 5;
-	constexpr int32_t cmp_num = 11;
+	constexpr int32_t cmp_num = 15;
 	constexpr int32_t round = 5;
 	constexpr int32_t COUNTER_PER_BUCKET = 8;
 
@@ -408,9 +415,13 @@ void BenchThp(const char *PATH) {
 			sketches[i][5] = new SS((i + 1) * mem_inc / 100); 
 			sketches[i][6] = new CMSketch((i + 1) * mem_inc);
 			sketches[i][7] = new CUSketch((i + 1) * mem_inc);
-			sketches[i][8] = new ASketch((i + 1) * mem_inc);
-			sketches[i][9] = new SalsaCM((i + 1) * mem_inc);
-			sketches[i][10] = new LogLogFilter((i + 1) * mem_inc);
+			sketches[i][8] = new CMHeap((i + 1) * mem_inc);
+			sketches[i][9] = new CUHeap((i + 1) * mem_inc);
+			sketches[i][10] = new ASketch((i + 1) * mem_inc);
+			sketches[i][11] = new SalsaCM((i + 1) * mem_inc);
+			sketches[i][12] = new LogLogFilter((i + 1) * mem_inc);
+			sketches[i][13] = new FCMSketch((i + 1) * mem_inc);
+			sketches[i][14] = new FCMSketchTopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 			
 
 			for (int l = 0; l < cmp_num; ++l) {
