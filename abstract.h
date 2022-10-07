@@ -81,7 +81,7 @@ public:
 	}
 
 	void CompareHH(HashMap mp, count_type length, ofstream &out) {
-		double realHH = 0, estHH = 0, bothHH = 0, aae = 0, are = 0, precision = 0, recall = 0, f1 = 0, alpha = 0.0002;
+		double realHH = 0, estHH = 0, bothHH = 0, aae = 0, are = 0, precision = 0, recall = 0, f1 = 0, alpha = 0.00002;
 		count_type threshold = (count_type)(length * alpha);
 
         for(auto it = mp.begin();it != mp.end();++it){

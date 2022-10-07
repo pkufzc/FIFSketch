@@ -22,7 +22,7 @@
 #include "LogLogFilter.h"
 #include "FCMSketch.h"
 #include "FCMSketchTopK.h"
-
+#include "MVSketch.h"
 typedef std::chrono::high_resolution_clock::time_point TP;
 
 inline TP now() { return std::chrono::high_resolution_clock::now(); }
@@ -37,7 +37,8 @@ data_type *read_data(const char *PATH, const count_type length,
 
 	FILE *data = fopen(PATH, "rb");
 	*cnt = 0;
-	while (fread(it++, sizeof(data_type), 1, data) > 0 && fread(timestamp++, sizeof(TIMESTAMP), 1, data) > 0) {
+	while (fread(it++, sizeof(data_type), 1, data) > 0 && fread(timestamp++, sizeof(TIMESTAMP), 1, data) > 0) 
+  	{
 		(*cnt)++;
 	}
 
@@ -45,6 +46,25 @@ data_type *read_data(const char *PATH, const count_type length,
 
 	return items;
 }
+
+bool *rebuild_data(data_type *items, count_type cnt, HashMap mp, double elephant_flow_threshold, double drop_probability){
+	// drop_probability is precise to two decimal places
+	bool *flags = new bool[cnt];
+	count_type threshold = (count_type)(cnt * elephant_flow_threshold);
+	for (uint32_t i = 0; i < cnt; i++)
+	{
+		if ((mp[items[i]] >= threshold) && (rand() % 100 < 100 * drop_probability))
+		{
+			flags[i] = false;
+		}else{
+			flags[i] = true;
+		}
+	}
+
+	return flags;
+	
+}
+
 
 void BenchTopKFlowSize(const char *PATH, uint32_t K) {
 	std::cout << "TopK Flow Size Estimation Benchmark" << std::endl << std::endl;
@@ -62,7 +82,7 @@ void BenchTopKFlowSize(const char *PATH, uint32_t K) {
 	for (int i = 0; i < mem_var; ++i) {
 		sketches[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 		sketches[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-		sketches[i][2] = new HeavyGuardian((i + 1) * mem_inc);
+		sketches[i][2] = new MVSketch((i + 1) * mem_inc);
 		sketches[i][3] = new USS((i + 1) * mem_inc / 100); 
 		sketches[i][4] = new SS((i + 1) * mem_inc / 100); 
 		sketches[i][5] = new CMHeap((i + 1) * mem_inc);
@@ -95,7 +115,7 @@ void BenchTopKFlowSize(const char *PATH, uint32_t K) {
 		}
 		
 		ofstream out;
-		out.open("./result/TopK_flow_size_estimation_"+to_string(memory)+"KB.txt",ios::out | ios::trunc);
+		out.open("../result/TopK_flow_size_estimation_"+to_string(memory)+"KB.txt",ios::out | ios::trunc);
 		for (int j = 0; j < cmp_num; ++j) {
 			sketches[i][j]->CompareFlowSize(mp, K, out);
 			delete sketches[i][j];
@@ -123,7 +143,7 @@ void BenchAllFlowSize(const char *PATH) {
 	for (int i = 0; i < mem_var; ++i) {
 		sketches[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 		sketches[i][1] = new FIFSketchOpt<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-		sketches[i][2] = new HeavyGuardian((i + 1) * mem_inc);
+		sketches[i][2] = new MVSketch((i + 1) * mem_inc);
 		sketches[i][3] = new USS((i + 1) * mem_inc / 100); 
 		sketches[i][4] = new SS((i + 1) * mem_inc / 100); 
 		sketches[i][5] = new CMSketch((i + 1) * mem_inc);
@@ -156,7 +176,7 @@ void BenchAllFlowSize(const char *PATH) {
 		}
 		
 		ofstream out;
-		out.open("./result/All_flow_size_estimation_"+to_string(memory)+"KB.txt",ios::out | ios::trunc);
+		out.open("../result/All_flow_size_estimation_"+to_string(memory)+"KB.txt",ios::out | ios::trunc);
 		for (int j = 0; j < cmp_num; ++j) {
 			sketches[i][j]->CompareFlowSize(mp, mp.size(),out); 
 			delete sketches[i][j];
@@ -184,7 +204,7 @@ void BenchHH(const char *PATH) {
 	for (int i = 0; i < mem_var; ++i) {
 		sketches[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 		sketches[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-		sketches[i][2] = new HeavyGuardian((i + 1) * mem_inc);
+		sketches[i][2] = new MVSketch((i + 1) * mem_inc);
 		sketches[i][3] = new USS((i + 1) * mem_inc / 100); 
 		sketches[i][4] = new SS((i + 1) * mem_inc / 100); 
 		sketches[i][5] = new CMHeap((i + 1) * mem_inc);
@@ -217,7 +237,7 @@ void BenchHH(const char *PATH) {
 		}
 		
 		ofstream out;
-		out.open("./result/Heavy_hitter_"+to_string(memory)+"KB.txt",ios::out | ios::trunc);
+		out.open("../result/Heavy_hitter_"+to_string(memory)+"KB.txt",ios::out | ios::trunc);
 		for (int j = 0; j < cmp_num; ++j) {
 			sketches[i][j]->CompareHH(mp, cnt, out);
 			delete sketches[i][j];
@@ -244,8 +264,8 @@ HashMap DiffHC(HashMap map1,HashMap map2){
 	return ret;
 }
 
-void CompareHC(HashMap mp, HashMap record, count_type length, ofstream &out) {
-	double realHH = 0, estHH = 0, bothHH = 0, aae = 0, are = 0, precision = 0, recall = 0, f1 = 0, alpha = 0.0005;
+void CompareHC(HashMap mp, HashMap record, count_type length, double alpha, ofstream &out) {
+	double realHH = 0, estHH = 0, bothHH = 0, aae = 0, are = 0, precision = 0, recall = 0, f1 = 0;
 	count_type threshold = (count_type)(length * alpha);
 
 	for(auto it = mp.begin();it != mp.end();++it){
@@ -275,8 +295,8 @@ void CompareHC(HashMap mp, HashMap record, count_type length, ofstream &out) {
 	out << aae << "\t" << are << "\t" << precision << "\t" << recall << "\t" << f1 << "\n";
 }
 
-void BenchHC(const char *PATH) {
-	std::cout << "Heavy Change Benchmark" << std::endl << std::endl;
+void BenchHCinTime(const char *PATH) {
+	std::cout << "Heavy Change in Time Benchmark" << std::endl << std::endl;
 	count_type cnt;
 	data_type *items = read_data(PATH, 100000000, &cnt);
 	std::cout << "The number of packet:" << cnt << std::endl;
@@ -285,6 +305,7 @@ void BenchHC(const char *PATH) {
 	constexpr int32_t mem_var = 5;
 	constexpr int32_t cmp_num = 11;
 	constexpr int32_t COUNTER_PER_BUCKET = 8;
+	double alpha = 0.0001;
 
 	Abstract *sketches1[mem_var][cmp_num];
 	Abstract *sketches2[mem_var][cmp_num];
@@ -292,7 +313,7 @@ void BenchHC(const char *PATH) {
 	for (int i = 0; i < mem_var; ++i) {
 		sketches1[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 		sketches1[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-		sketches1[i][2] = new HeavyGuardian((i + 1) * mem_inc);
+		sketches1[i][2] = new MVSketch((i + 1) * mem_inc);
 		sketches1[i][3] = new USS((i + 1) * mem_inc / 100); 
 		sketches1[i][4] = new SS((i + 1) * mem_inc / 100); 
 		sketches1[i][5] = new CMHeap((i + 1) * mem_inc);
@@ -304,7 +325,7 @@ void BenchHC(const char *PATH) {
 
 		sketches2[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 		sketches2[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-		sketches2[i][2] = new HeavyGuardian((i + 1) * mem_inc);
+		sketches2[i][2] = new MVSketch((i + 1) * mem_inc);
 		sketches2[i][3] = new USS((i + 1) * mem_inc / 100); 
 		sketches2[i][4] = new SS((i + 1) * mem_inc / 100); 
 		sketches2[i][5] = new CMHeap((i + 1) * mem_inc);
@@ -316,54 +337,166 @@ void BenchHC(const char *PATH) {
 	
 	}
 
-	HashMap mp1[mem_var][cmp_num],mp2[mem_var][cmp_num],record1[mem_var][cmp_num],record2[mem_var][cmp_num];
+	HashMap mp1,mp2,record1[mem_var][cmp_num],record2[mem_var][cmp_num];
 	for (int l = 0; l < (cnt >> 1); ++l){
+		mp1[items[l]] += 1;
 		for (int i = 0; i < mem_var; ++i) {
 			for (int j = 0; j < cmp_num; ++j) {
-				mp1[i][j][items[l]] += 1;
 				sketches1[i][j]->Insert(items[l]);
 			}
 		}
 	}
 
 	for (int l = (cnt >> 1); l < cnt; ++l){
+		mp2[items[l]] += 1;
 		for (int i = 0; i < mem_var; ++i) {
 			for (int j = 0; j < cmp_num; ++j) {
-				mp2[i][j][items[l]] += 1;
 				sketches2[i][j]->Insert(items[l]);
 			}
 		}
 	}
 
-	for (int i = 0; i < mem_var; ++i) {
-		for (int j = 0; j < cmp_num; ++j) {
-			for (auto it = mp1[i][j].begin();it != mp1[i][j].end();++it){
+	for (auto it = mp1.begin();it != mp1.end();++it){
+		for (int i = 0; i < mem_var; ++i) {
+			for (int j = 0; j < cmp_num; ++j) {
 				record1[i][j][it->first] = sketches1[i][j]->Query(it->first);
 			}
 		}
 	}
 
-	for (int i = 0; i < mem_var; ++i) {
-		for (int j = 0; j < cmp_num; ++j) {
-			for (auto it = mp2[i][j].begin();it != mp2[i][j].end();++it){
+	for (auto it = mp2.begin();it != mp2.end();++it){
+		for (int i = 0; i < mem_var; ++i) {
+			for (int j = 0; j < cmp_num; ++j) {
 				record2[i][j][it->first] = sketches2[i][j]->Query(it->first);
 			}
 		}
 	}
 
+	HashMap realMap = DiffHC(mp1,mp2);
 	for (int i = 0; i < mem_var; ++i) {
 		int memory = (mem_base + mem_inc * (i + 1)) / 1000;
 		std::cout << "Memory size: " << memory
 		          << "KB" << std::endl
 		          << std::endl;
 		ofstream out;
-		out.open("./result/Heavy_change_"+to_string(memory)+"KB.txt",ios::out | ios::trunc);
+		out.open("../result/Heavy_change_in_Time_"+to_string(memory)+"KB.txt",ios::out | ios::trunc);
 		for (int j = 0; j < cmp_num; ++j) {
 			std::cout << (sketches1[i][j]->name) << std::endl;
-			HashMap realMap = DiffHC(mp1[i][j],mp2[i][j]);
 			HashMap estMap = DiffHC(record1[i][j],record2[i][j]);
 
-			CompareHC(realMap, estMap, realMap.size(), out);
+			CompareHC(realMap, estMap, realMap.size(), alpha, out);
+		}
+		out.close();
+	}
+
+	for (int i = 0; i < mem_var; ++i) {
+		for (int j = 0; j < cmp_num; ++j) {
+			delete sketches1[i][j];
+			delete sketches2[i][j];
+		}
+	}
+
+	delete items;
+}
+
+void BenchHCinSpace(const char *PATH) {
+	std::cout << "Heavy Change in Space Benchmark" << std::endl << std::endl;
+	count_type cnt;
+	data_type *items = read_data(PATH, 100000000, &cnt);
+	std::cout << "The number of packet:" << cnt << std::endl;
+	constexpr int32_t mem_base = 0;
+	constexpr int32_t mem_inc = 200000;
+	constexpr int32_t mem_var = 5;
+	constexpr int32_t cmp_num = 11;
+	constexpr int32_t COUNTER_PER_BUCKET = 8;
+	double HC_alpha = 0.0001;
+	double elephant_flow_threshold = 1e-05;
+	double drop_probability = 0.7; // drop_probability is precise to two decimal places
+  	std::cout << "HC_alpha:" << HC_alpha << ", elephant_flow_threshold:" << elephant_flow_threshold << ", drop_probability:" << drop_probability << std::endl;
+  
+	Abstract *sketches1[mem_var][cmp_num];
+	Abstract *sketches2[mem_var][cmp_num];
+
+	for (int i = 0; i < mem_var; ++i) {
+		sketches1[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+		sketches1[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+		sketches1[i][2] = new MVSketch((i + 1) * mem_inc);
+		sketches1[i][3] = new USS((i + 1) * mem_inc / 100); 
+		sketches1[i][4] = new SS((i + 1) * mem_inc / 100); 
+		sketches1[i][5] = new CMHeap((i + 1) * mem_inc);
+		sketches1[i][6] = new CUHeap((i + 1) * mem_inc);
+		sketches1[i][7] = new ASketch((i + 1) * mem_inc);
+		sketches1[i][8] = new SalsaCM((i + 1) * mem_inc);
+		sketches1[i][9] = new LogLogFilter((i + 1) * mem_inc);
+		sketches1[i][10] = new FCMSketchTopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+
+		sketches2[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+		sketches2[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+		sketches2[i][2] = new MVSketch((i + 1) * mem_inc);
+		sketches2[i][3] = new USS((i + 1) * mem_inc / 100); 
+		sketches2[i][4] = new SS((i + 1) * mem_inc / 100); 
+		sketches2[i][5] = new CMHeap((i + 1) * mem_inc);
+		sketches2[i][6] = new CUHeap((i + 1) * mem_inc);
+		sketches2[i][7] = new ASketch((i + 1) * mem_inc);
+		sketches2[i][8] = new SalsaCM((i + 1) * mem_inc);
+		sketches2[i][9] = new LogLogFilter((i + 1) * mem_inc);
+		sketches2[i][10] = new FCMSketchTopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+	
+	}
+
+	HashMap mp1,mp2,record1[mem_var][cmp_num],record2[mem_var][cmp_num];
+	for (int l = 0; l < cnt; ++l){
+		mp1[items[l]] += 1;
+		for (int i = 0; i < mem_var; ++i) {
+			for (int j = 0; j < cmp_num; ++j) {
+				sketches1[i][j]->Insert(items[l]);
+			}
+		}
+	}
+
+	bool *flags = rebuild_data(items, cnt, mp1, elephant_flow_threshold, drop_probability);
+
+	for (int l = 0; l < cnt; ++l){
+		if (flags[l])
+		{
+			mp2[items[l]] += 1;
+			for (int i = 0; i < mem_var; ++i) {
+				for (int j = 0; j < cmp_num; ++j) {
+					sketches2[i][j]->Insert(items[l]);
+				}
+			}
+		}
+	}
+
+	for (auto it = mp1.begin();it != mp1.end();++it){
+		for (int i = 0; i < mem_var; ++i) {
+			for (int j = 0; j < cmp_num; ++j) {
+				record1[i][j][it->first] = sketches1[i][j]->Query(it->first);
+			}
+		}
+	}
+
+	for (auto it = mp2.begin();it != mp2.end();++it){
+		for (int i = 0; i < mem_var; ++i) {
+			for (int j = 0; j < cmp_num; ++j) {
+				record2[i][j][it->first] = sketches2[i][j]->Query(it->first);
+			}
+		}
+	}
+
+	HashMap realMap = DiffHC(mp1,mp2);
+	for (int i = 0; i < mem_var; ++i) {
+		int memory = (mem_base + mem_inc * (i + 1)) / 1000;
+		std::cout << "Memory size: " << memory
+		          << "KB" << std::endl
+		          << std::endl;
+		ofstream out;
+		out.open("../result/Heavy_change_in_Space_"+to_string(memory)+"KB.txt",ios::out | ios::trunc);
+		for (int j = 0; j < cmp_num; ++j) {
+			std::cout << (sketches1[i][j]->name) << std::endl;
+			HashMap estMap = DiffHC(record1[i][j],record2[i][j]);
+
+			CompareHC(realMap, estMap, realMap.size(), HC_alpha, out);
 		}
 		out.close();
 	}
@@ -410,7 +543,7 @@ void BenchThp(const char *PATH) {
 			sketches[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 			sketches[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 			sketches[i][2] = new FIFSketchOpt<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-			sketches[i][3] = new HeavyGuardian((i + 1) * mem_inc);
+			sketches[i][3] = new MVSketch((i + 1) * mem_inc);
 			sketches[i][4] = new USS((i + 1) * mem_inc / 100); 
 			sketches[i][5] = new SS((i + 1) * mem_inc / 100); 
 			sketches[i][6] = new CMSketch((i + 1) * mem_inc);
