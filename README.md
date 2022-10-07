@@ -8,6 +8,8 @@ This paper has been submitted to IEEE ICDE 2023.
 * g++
 
 ## How to run
-1. cmake .
-2. make
-3. ./bench
+1. mkdir build datasets results
+2. cd build
+3. cmake ..
+4. make
+5. ./bench
