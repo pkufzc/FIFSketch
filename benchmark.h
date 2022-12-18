@@ -8,8 +8,8 @@
 #include <fstream>
 #include "util.h"
 #include "Elastic.h"
-#include "FIFSketch.h"
-#include "FIFSketchOpt.h"
+#include "OneSketch_TopK.h"
+#include "OneSketch_Peritem.h"
 #include "CMSketch.h"
 #include "CMHeap.h"
 #include "CUSketch.h"
@@ -81,7 +81,7 @@ void BenchTopKFlowSize(const char *PATH, uint32_t K) {
 
 	for (int i = 0; i < mem_var; ++i) {
 		sketches[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-		sketches[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+		sketches[i][1] = new OneSketch_TopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 		sketches[i][2] = new MVSketch((i + 1) * mem_inc);
 		sketches[i][3] = new USS((i + 1) * mem_inc / 100); 
 		sketches[i][4] = new SS((i + 1) * mem_inc / 100); 
@@ -142,7 +142,7 @@ void BenchAllFlowSize(const char *PATH) {
 
 	for (int i = 0; i < mem_var; ++i) {
 		sketches[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-		sketches[i][1] = new FIFSketchOpt<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+		sketches[i][1] = new OneSketch_Peritem<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 		sketches[i][2] = new MVSketch((i + 1) * mem_inc);
 		sketches[i][3] = new USS((i + 1) * mem_inc / 100); 
 		sketches[i][4] = new SS((i + 1) * mem_inc / 100); 
@@ -203,7 +203,7 @@ void BenchHH(const char *PATH) {
 
 	for (int i = 0; i < mem_var; ++i) {
 		sketches[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-		sketches[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+		sketches[i][1] = new OneSketch_TopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 		sketches[i][2] = new MVSketch((i + 1) * mem_inc);
 		sketches[i][3] = new USS((i + 1) * mem_inc / 100); 
 		sketches[i][4] = new SS((i + 1) * mem_inc / 100); 
@@ -312,7 +312,7 @@ void BenchHCinTime(const char *PATH) {
 
 	for (int i = 0; i < mem_var; ++i) {
 		sketches1[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-		sketches1[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+		sketches1[i][1] = new OneSketch_TopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 		sketches1[i][2] = new MVSketch((i + 1) * mem_inc);
 		sketches1[i][3] = new USS((i + 1) * mem_inc / 100); 
 		sketches1[i][4] = new SS((i + 1) * mem_inc / 100); 
@@ -324,7 +324,7 @@ void BenchHCinTime(const char *PATH) {
 		sketches1[i][10] = new FCMSketchTopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 
 		sketches2[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-		sketches2[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+		sketches2[i][1] = new OneSketch_TopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 		sketches2[i][2] = new MVSketch((i + 1) * mem_inc);
 		sketches2[i][3] = new USS((i + 1) * mem_inc / 100); 
 		sketches2[i][4] = new SS((i + 1) * mem_inc / 100); 
@@ -419,7 +419,7 @@ void BenchHCinSpace(const char *PATH) {
 
 	for (int i = 0; i < mem_var; ++i) {
 		sketches1[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-		sketches1[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+		sketches1[i][1] = new OneSketch_TopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 		sketches1[i][2] = new MVSketch((i + 1) * mem_inc);
 		sketches1[i][3] = new USS((i + 1) * mem_inc / 100); 
 		sketches1[i][4] = new SS((i + 1) * mem_inc / 100); 
@@ -431,7 +431,7 @@ void BenchHCinSpace(const char *PATH) {
 		sketches1[i][10] = new FCMSketchTopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 
 		sketches2[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-		sketches2[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+		sketches2[i][1] = new OneSketch_TopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 		sketches2[i][2] = new MVSketch((i + 1) * mem_inc);
 		sketches2[i][3] = new USS((i + 1) * mem_inc / 100); 
 		sketches2[i][4] = new SS((i + 1) * mem_inc / 100); 
@@ -541,8 +541,8 @@ void BenchThp(const char *PATH) {
 
 		for (int j = 0; j < round; ++j) {
 			sketches[i][0] = new Elastic<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-			sketches[i][1] = new FIFSketch<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
-			sketches[i][2] = new FIFSketchOpt<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+			sketches[i][1] = new OneSketch_TopK<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
+			sketches[i][2] = new OneSketch_Peritem<COUNTER_PER_BUCKET>((i + 1) * mem_inc);
 			sketches[i][3] = new MVSketch((i + 1) * mem_inc);
 			sketches[i][4] = new USS((i + 1) * mem_inc / 100); 
 			sketches[i][5] = new SS((i + 1) * mem_inc / 100); 

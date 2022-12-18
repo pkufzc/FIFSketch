@@ -61,7 +61,7 @@ inline uint64_t hash64(data_type item, uint32_t seed = 0) {
 }
 
 inline uint32_t hash32(data_type item, uint32_t seed = 0) {
-	return Hash::BOBHash64((uint8_t *)&item, sizeof(data_type), seed);
+	return Hash::BOBHash32((uint8_t *)&item, sizeof(data_type), seed);
 }
 
 static std::random_device rd;

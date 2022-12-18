@@ -8,12 +8,12 @@
 
 using namespace std;
 
-// Per-item
+// TopK
 template<uint32_t COUNTER_PER_BUCKET>
-class FIFSketchOpt : public Abstract{
+class OneSketch_TopK : public Abstract{
 public:
-    FIFSketchOpt(double _MEMORY)
-        : Abstract((char *)"FIFSketchOpt")
+    OneSketch_TopK(double _MEMORY)
+        : Abstract((char *)"OneSketch_TopK")
     {
         HEAVY_LENGTH = _MEMORY * HEAVY_RATIO / sizeof(Bucket);;
         
@@ -24,7 +24,7 @@ public:
 
     }
 
-    ~FIFSketchOpt(){
+    ~OneSketch_TopK(){
         delete [] buckets;
         delete towerCU;
     }
@@ -53,13 +53,9 @@ public:
 
         if(!(rand()%(minVal+1))){
             count_type light_query = towerCU->Query(item);
-            if(light_query < 15 && light_query < minVal){
-                towerCU->Insert(item);
-            }else{
-                towerCU->Insert(buckets[pos].ID[minPos], buckets[pos].count[minPos]);
-                buckets[pos].ID[minPos] = item;
-                buckets[pos].count[minPos] = std::max(light_query, minVal) + 1;
-            }
+            towerCU->Insert(buckets[pos].ID[minPos], buckets[pos].count[minPos]);
+            buckets[pos].ID[minPos] = item;
+            buckets[pos].count[minPos] = light_query + 1;
         }
         else {
             towerCU->Insert(item);
@@ -79,9 +75,10 @@ public:
     double get_entropy(){return 0.0;}
     int get_cardinality(){return 0;}
 
+
 private:
-    double HEAVY_RATIO = 0.2;
-    double LIGHT_RATIO = 0.8;
+    double HEAVY_RATIO = 0.8;
+    double LIGHT_RATIO = 0.2;
     
     struct Bucket{
         data_type ID[COUNTER_PER_BUCKET];
@@ -101,4 +98,5 @@ private:
 
     Bucket* buckets;
     TowerCU* towerCU;
+
 };
